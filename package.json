@@ -1,0 +1,20 @@
+{
+  "name": "modelharbor",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Visual control center for LLM providers: live health/latency, task-aware routing with failover, and a real usage-cost dashboard.",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "build": "npm run build -w server && npm run build -w web",
+    "test": "npm run test -w server",
+    "test:coverage": "npm run test:coverage -w server",
+    "lint": "npm run lint -w server && npm run lint -w web",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web"
+  },
+  "license": "MIT"
+}

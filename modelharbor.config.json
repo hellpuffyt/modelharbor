@@ -1,0 +1,88 @@
+{
+  "healthCacheMs": 15000,
+  "providers": [
+    {
+      "id": "aurora",
+      "label": "Aurora Cloud",
+      "kind": "mock",
+      "baseUrl": "mock://aurora",
+      "timeoutMs": 8000,
+      "models": [
+        {
+          "id": "aurora-coder-large",
+          "contextLength": 128000,
+          "priority": 1,
+          "tasks": ["code", "long-context"],
+          "pricing": { "promptPer1k": 0.006, "completionPer1k": 0.018 }
+        },
+        {
+          "id": "aurora-chat-fast",
+          "contextLength": 32000,
+          "priority": 2,
+          "tasks": ["chat", "fast"],
+          "pricing": { "promptPer1k": 0.0008, "completionPer1k": 0.0016 }
+        },
+        {
+          "id": "aurora-flaky-preview",
+          "contextLength": 64000,
+          "priority": 3,
+          "tasks": ["chat", "code"],
+          "pricing": { "promptPer1k": 0.001, "completionPer1k": 0.002 }
+        }
+      ]
+    },
+    {
+      "id": "boreal",
+      "label": "Boreal Compute",
+      "kind": "mock",
+      "baseUrl": "mock://boreal",
+      "timeoutMs": 8000,
+      "models": [
+        {
+          "id": "boreal-slow-context",
+          "contextLength": 200000,
+          "priority": 2,
+          "tasks": ["long-context"],
+          "pricing": { "promptPer1k": 0.003, "completionPer1k": 0.009 }
+        },
+        {
+          "id": "boreal-fast-mini",
+          "contextLength": 16000,
+          "priority": 1,
+          "tasks": ["fast", "chat"],
+          "pricing": { "promptPer1k": 0.0002, "completionPer1k": 0.0004 }
+        },
+        {
+          "id": "boreal-down-legacy",
+          "contextLength": 8000,
+          "priority": 4,
+          "tasks": ["chat"],
+          "pricing": { "promptPer1k": 0.0005, "completionPer1k": 0.001 }
+        }
+      ]
+    },
+    {
+      "id": "local-forge",
+      "label": "Local Forge (self-hosted)",
+      "kind": "mock",
+      "baseUrl": "mock://local-forge",
+      "timeoutMs": 8000,
+      "models": [
+        {
+          "id": "forge-code-7b",
+          "contextLength": 32000,
+          "priority": 2,
+          "tasks": ["code", "fast"],
+          "pricing": { "promptPer1k": 0, "completionPer1k": 0 }
+        },
+        {
+          "id": "forge-chat-13b",
+          "contextLength": 32000,
+          "priority": 3,
+          "tasks": ["chat"],
+          "pricing": { "promptPer1k": 0, "completionPer1k": 0 }
+        }
+      ]
+    }
+  ]
+}

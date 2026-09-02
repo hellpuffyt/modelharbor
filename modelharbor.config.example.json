@@ -1,0 +1,63 @@
+{
+  "_comment": "Example live configuration. 'openai-compatible' targets any provider that speaks the OpenAI chat/completions HTTP shape (OpenAI itself, LM Studio, vLLM, LiteLLM proxies, OpenRouter, and Anthropic via an OpenAI-shim endpoint). 'ollama' targets a real Ollama server's native REST API. Copy this file to modelharbor.config.json, set MODELHARBOR_CONFIG to its path, and put real API keys only in that file (never commit it).",
+  "healthCacheMs": 15000,
+  "providers": [
+    {
+      "id": "openai",
+      "label": "OpenAI",
+      "kind": "openai-compatible",
+      "baseUrl": "https://api.openai.com/v1",
+      "apiKey": "sk-...",
+      "timeoutMs": 15000,
+      "models": [
+        {
+          "id": "gpt-4o",
+          "contextLength": 128000,
+          "priority": 1,
+          "tasks": ["code", "chat", "long-context"],
+          "pricing": { "promptPer1k": 0.005, "completionPer1k": 0.015 }
+        },
+        {
+          "id": "gpt-4o-mini",
+          "contextLength": 128000,
+          "priority": 2,
+          "tasks": ["fast", "chat"],
+          "pricing": { "promptPer1k": 0.00015, "completionPer1k": 0.0006 }
+        }
+      ]
+    },
+    {
+      "id": "anthropic",
+      "label": "Anthropic (via OpenAI-shim gateway)",
+      "kind": "openai-compatible",
+      "baseUrl": "https://your-openai-shim.example.com/v1",
+      "apiKey": "sk-ant-...",
+      "timeoutMs": 15000,
+      "models": [
+        {
+          "id": "claude-sonnet-4-5",
+          "contextLength": 200000,
+          "priority": 1,
+          "tasks": ["code", "long-context", "chat"],
+          "pricing": { "promptPer1k": 0.003, "completionPer1k": 0.015 }
+        }
+      ]
+    },
+    {
+      "id": "ollama-local",
+      "label": "Ollama (localhost)",
+      "kind": "ollama",
+      "baseUrl": "http://localhost:11434",
+      "timeoutMs": 20000,
+      "models": [
+        {
+          "id": "qwen2.5-coder:7b",
+          "contextLength": 32000,
+          "priority": 3,
+          "tasks": ["code", "fast"],
+          "pricing": { "promptPer1k": 0, "completionPer1k": 0 }
+        }
+      ]
+    }
+  ]
+}
