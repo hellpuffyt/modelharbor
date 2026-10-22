@@ -1,5 +1,6 @@
 import { createServer as createHttpServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { redactConfig } from "./config.js";
+import { redactSecrets } from "./redact.js";
 import { summarize, type UsageStore } from "./costStore.js";
 import { executeTask } from "./execute.js";
 import { HealthCache } from "./health.js";
@@ -12,27 +13,46 @@ export interface ApiDeps {
   clients: Map<string, ProviderClient>;
   healthCache: HealthCache;
   usageStore: UsageStore;
+  /**
+   * Exact origin allowed to call the API cross-origin (e.g. a dashboard
+   * built with VITE_API_BASE_URL and served elsewhere). Unset = no CORS
+   * headers at all: only same-origin pages (or the Vite dev proxy) can use
+   * the API. A wildcard is deliberately not supported — POST /api/route
+   * spends money with the server's provider keys.
+   */
+  corsOrigin?: string;
 }
 
-function sendJson(res: ServerResponse, status: number, body: unknown): void {
-  const payload = JSON.stringify(body);
-  res.writeHead(status, {
-    "content-type": "application/json; charset=utf-8",
-    "content-length": Buffer.byteLength(payload),
-    "access-control-allow-origin": "*",
-  });
-  res.end(payload);
+/** Largest accepted request body. Prompts are text; this is generous. */
+export const MAX_BODY_BYTES = 1024 * 1024;
+
+class HttpError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
 }
 
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
+  let size = 0;
   for await (const chunk of req) {
+    size += (chunk as Buffer).length;
+    if (size > MAX_BODY_BYTES) {
+      throw new HttpError(413, `request body exceeds ${String(MAX_BODY_BYTES)} bytes`);
+    }
     chunks.push(chunk as Buffer);
   }
   if (chunks.length === 0) return {};
   const text = Buffer.concat(chunks).toString("utf8");
   if (text.trim().length === 0) return {};
-  return JSON.parse(text) as unknown;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new HttpError(400, "request body is not valid JSON");
+  }
 }
 
 function isTaskType(value: unknown): value is TaskType {
@@ -40,11 +60,31 @@ function isTaskType(value: unknown): value is TaskType {
 }
 
 export function createApiServer(deps: ApiDeps): Server {
-  const { config, clients, healthCache, usageStore } = deps;
+  const { config, clients, healthCache, usageStore, corsOrigin } = deps;
+  const secrets = config.providers.map((p) => p.apiKey);
+
+  function corsHeaders(): Record<string, string> {
+    return corsOrigin ? { "access-control-allow-origin": corsOrigin, vary: "Origin" } : {};
+  }
+
+  function sendJson(res: ServerResponse, status: number, body: unknown): void {
+    const payload = JSON.stringify(body);
+    res.writeHead(status, {
+      "content-type": "application/json; charset=utf-8",
+      "content-length": Buffer.byteLength(payload),
+      ...corsHeaders(),
+    });
+    res.end(payload);
+  }
 
   return createHttpServer((req, res) => {
     void handle(req, res).catch((err: unknown) => {
-      sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
+      if (res.headersSent) return;
+      if (err instanceof HttpError) {
+        sendJson(res, err.status, { error: err.message });
+        return;
+      }
+      sendJson(res, 500, { error: redactSecrets(err instanceof Error ? err.message : String(err), secrets) });
     });
   });
 
@@ -53,11 +93,16 @@ export function createApiServer(deps: ApiDeps): Server {
     const method = req.method ?? "GET";
 
     if (method === "OPTIONS") {
-      res.writeHead(204, {
-        "access-control-allow-origin": "*",
-        "access-control-allow-methods": "GET,POST,OPTIONS",
-        "access-control-allow-headers": "content-type",
-      });
+      res.writeHead(
+        204,
+        corsOrigin
+          ? {
+              ...corsHeaders(),
+              "access-control-allow-methods": "GET,POST,OPTIONS",
+              "access-control-allow-headers": "content-type",
+            }
+          : {},
+      );
       res.end();
       return;
     }
@@ -87,6 +132,13 @@ export function createApiServer(deps: ApiDeps): Server {
     }
 
     if (method === "POST" && url.pathname === "/api/route") {
+      // Requiring a JSON content type means a cross-site page cannot send this
+      // as a CORS "simple request" (form / text/plain) that skips preflight.
+      const contentType = (req.headers["content-type"] ?? "").split(";")[0]?.trim().toLowerCase();
+      if (contentType !== "application/json") {
+        sendJson(res, 415, { error: 'POST /api/route requires "content-type: application/json"' });
+        return;
+      }
       const body = await readJsonBody(req);
       const obj = typeof body === "object" && body !== null ? (body as Record<string, unknown>) : {};
       const task = obj.task;

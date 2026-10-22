@@ -1,5 +1,5 @@
 {
-  "_comment": "Example live configuration. 'openai-compatible' targets any provider that speaks the OpenAI chat/completions HTTP shape (OpenAI itself, LM Studio, vLLM, LiteLLM proxies, OpenRouter, and Anthropic via an OpenAI-shim endpoint). 'ollama' targets a real Ollama server's native REST API. Copy this file to modelharbor.config.json, set MODELHARBOR_CONFIG to its path, and put real API keys only in that file (never commit it).",
+  "_comment": "Example live configuration. 'openai-compatible' targets any provider that speaks the OpenAI chat/completions HTTP shape (OpenAI itself, LM Studio, vLLM, LiteLLM proxies, OpenRouter, and Anthropic via an OpenAI-shim endpoint). 'ollama' targets a real Ollama server's native REST API. Copy this file to modelharbor.config.local.json (gitignored), set MODELHARBOR_CONFIG to its path, and put real API keys only in that file.",
   "healthCacheMs": 15000,
   "providers": [
     {
@@ -7,7 +7,7 @@
       "label": "OpenAI",
       "kind": "openai-compatible",
       "baseUrl": "https://api.openai.com/v1",
-      "apiKey": "sk-...",
+      "apiKey": "REPLACE_WITH_YOUR_OPENAI_KEY",
       "timeoutMs": 15000,
       "models": [
         {
@@ -31,7 +31,7 @@
       "label": "Anthropic (via OpenAI-shim gateway)",
       "kind": "openai-compatible",
       "baseUrl": "https://your-openai-shim.example.com/v1",
-      "apiKey": "sk-ant-...",
+      "apiKey": "REPLACE_WITH_YOUR_GATEWAY_KEY",
       "timeoutMs": 15000,
       "models": [
         {

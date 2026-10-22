@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { computeCostUsd } from "./costStore.js";
 import { buildCandidatePool } from "./router.js";
+import { redactSecrets } from "./redact.js";
 import type {
   ModelHealth,
   ProviderClient,
@@ -135,7 +136,10 @@ export async function executeTask(
           task,
           attempted,
           chosen: null,
-          reason: `all attempted candidates failed for task "${task}": ${err instanceof Error ? err.message : String(err)}`,
+          reason: `all attempted candidates failed for task "${task}": ${redactSecrets(
+            err instanceof Error ? err.message : String(err),
+            providers.map((p) => p.apiKey),
+          )}`,
           text: null,
           events,
         };

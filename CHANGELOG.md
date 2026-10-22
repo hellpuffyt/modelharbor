@@ -3,6 +3,35 @@
 All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Security
+
+- The API server binds `127.0.0.1` by default (`HOST` to override); it used
+  to listen on all interfaces with no authentication.
+- Removed `access-control-allow-origin: *`, which let any website run paid
+  prompts through `POST /api/route`. CORS is opt-in for one exact origin
+  (`MODELHARBOR_CORS_ORIGIN`). `POST /api/route` requires
+  `content-type: application/json`; bodies over 1 MiB get 413.
+- Provider error text (health errors, failover reasons) and `/api/config`
+  `baseUrl` values are scrubbed of the configured key, bearer tokens, `sk-…`
+  strings and URL credentials.
+- Live configs go in `*.local.json` (gitignored) instead of overwriting the
+  tracked `modelharbor.config.json`.
+
+### Fixed
+
+- `npm run dev:server` crashed with ENOENT: the workspace script runs inside
+  `server/`, so the default config path did not exist. Paths now resolve
+  against the directory `npm` was run from.
+- Malformed JSON bodies return 400 instead of 500.
+
+### Added
+
+- `server/test/security.test.ts`, and a suite-wide network guard
+  (`server/test/setup.ts`) that fails any test reaching a non-loopback host.
+- `SECURITY.md`, `.editorconfig`, `docs/PRODUCTION_READINESS.md`.
+
 ## [1.0.0] - 2026-09-02
 
 ### Added

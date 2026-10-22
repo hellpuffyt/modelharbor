@@ -170,14 +170,18 @@ describe("unmatched routes and CORS", () => {
     expect(res.status).toBe(404);
   });
 
-  it("responds to OPTIONS preflight with 204 and CORS headers", async () => {
+  // Changed during the production-readiness audit: these used to expect
+  // "access-control-allow-origin: *", which let any website drive paid
+  // POST /api/route calls with the server's provider keys. CORS is now
+  // opt-in for one exact origin (see test/security.test.ts).
+  it("answers OPTIONS preflight with 204 but grants no CORS by default", async () => {
     const res = await fetch(`${baseUrl}/api/route`, { method: "OPTIONS" });
     expect(res.status).toBe(204);
-    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
   });
 
-  it("sets access-control-allow-origin on ordinary responses", async () => {
+  it("sets no access-control-allow-origin on ordinary responses by default", async () => {
     const res = await fetch(`${baseUrl}/api/config`);
-    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
   });
 });
