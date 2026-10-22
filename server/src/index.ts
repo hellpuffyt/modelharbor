@@ -3,12 +3,15 @@ import { loadConfigFromFile } from "./config.js";
 import { FileUsageStore, MemoryUsageStore, type UsageStore } from "./costStore.js";
 import { createProviderClient } from "./providers/factory.js";
 import { HealthCache } from "./health.js";
+import { configPathFromEnv, listenOptionsFromEnv, resolveUserPath } from "./listen.js";
 import type { ProviderClient } from "./types.js";
 
 function main(): void {
-  const configPath = process.env.MODELHARBOR_CONFIG ?? "modelharbor.config.json";
-  const port = Number(process.env.PORT ?? 4180);
-  const usagePath = process.env.MODELHARBOR_USAGE_LOG;
+  const configPath = configPathFromEnv(process.env, process.cwd());
+  const { host, port, corsOrigin } = listenOptionsFromEnv(process.env);
+  const usagePath = process.env.MODELHARBOR_USAGE_LOG
+    ? resolveUserPath(process.env.MODELHARBOR_USAGE_LOG, process.env, process.cwd())
+    : undefined;
 
   const config = loadConfigFromFile(configPath);
   const clients = new Map<string, ProviderClient>();
@@ -18,9 +21,10 @@ function main(): void {
   const healthCache = new HealthCache(config.providers, clients, config.healthCacheMs);
   const usageStore: UsageStore = usagePath ? new FileUsageStore(usagePath) : new MemoryUsageStore();
 
-  const server = createApiServer({ config, clients, healthCache, usageStore });
-  server.listen(port, () => {
-    console.log(`modelharbor server listening on http://localhost:${port}`);
+  const server = createApiServer({ config, clients, healthCache, usageStore, ...(corsOrigin ? { corsOrigin } : {}) });
+  server.listen(port, host, () => {
+    console.log(`modelharbor server listening on http://${host}:${port}`);
+    if (corsOrigin) console.log(`CORS allowed origin: ${corsOrigin}`);
     console.log(`config: ${configPath} (${config.providers.length} provider(s))`);
     console.log(usagePath ? `usage log: ${usagePath}` : "usage log: in-memory (not persisted)");
   });

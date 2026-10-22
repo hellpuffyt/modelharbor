@@ -1,4 +1,5 @@
 import type { GenerateResult, ProviderClient, ProviderConfig } from "../types.js";
+import { redactSecrets } from "../redact.js";
 
 interface OllamaTagsResponse {
   models: Array<{ name: string }>;
@@ -19,6 +20,11 @@ function withTimeout(ms: number): { signal: AbortSignal; cancel: () => void } {
 /** Client for a real Ollama server (https://github.com/ollama/ollama REST API). */
 export class OllamaClient implements ProviderClient {
   constructor(public readonly config: ProviderConfig) {}
+
+  /** Error text can reach the dashboard, so it never carries credentials. */
+  private clean(message: string): string {
+    return redactSecrets(message, [this.config.apiKey]);
+  }
 
   async listModels(): Promise<string[]> {
     const res = await fetch(`${this.config.baseUrl}/api/tags`, { method: "GET" });
@@ -42,13 +48,13 @@ export class OllamaClient implements ProviderClient {
       const latencyMs = Math.round(performance.now() - start);
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        return { ok: false, latencyMs, error: `HTTP ${res.status}: ${text.slice(0, 200)}` };
+        return { ok: false, latencyMs, error: this.clean(`HTTP ${res.status}: ${text.slice(0, 200)}`) };
       }
       await res.json();
       return { ok: true, latencyMs, error: null };
     } catch (err) {
       const latencyMs = Math.round(performance.now() - start);
-      return { ok: false, latencyMs, error: err instanceof Error ? err.message : String(err) };
+      return { ok: false, latencyMs, error: this.clean(err instanceof Error ? err.message : String(err)) };
     } finally {
       cancel();
     }
@@ -67,7 +73,7 @@ export class OllamaClient implements ProviderClient {
       const latencyMs = Math.round(performance.now() - start);
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        throw new Error(`ollama generate failed with HTTP ${res.status}: ${text.slice(0, 200)}`);
+        throw new Error(this.clean(`ollama generate failed with HTTP ${res.status}: ${text.slice(0, 200)}`));
       }
       const body = (await res.json()) as OllamaGenerateResponse;
       return {

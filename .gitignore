@@ -8,3 +8,6 @@ coverage/
 *.usage.jsonl
 .DS_Store
 Thumbs.db
+
+# Live configs with real provider keys (see README "Going live").
+*.local.json

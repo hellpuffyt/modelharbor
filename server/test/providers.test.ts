@@ -1,3 +1,6 @@
+// MOCKED HTTP: every adapter test below replaces global fetch with a vi.fn()
+// stub returning canned Response objects. No test in this file reaches a real
+// provider; test/setup.ts additionally rejects any non-loopback fetch.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createProviderClient } from "../src/providers/factory.js";
 import { OllamaClient } from "../src/providers/ollama.js";

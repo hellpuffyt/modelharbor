@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { ModelHarborConfig, ModelPricing, ProviderConfig, ProviderKind, TaskType } from "./types.js";
 import { TASK_TYPES } from "./types.js";
+import { redactUrl } from "./redact.js";
 
 export class ConfigError extends Error {}
 
@@ -118,7 +119,7 @@ export function redactConfig(config: ModelHarborConfig): ModelHarborConfig {
     providers: config.providers.map((p) => {
       const { apiKey, ...rest } = p;
       void apiKey;
-      return { ...rest };
+      return { ...rest, baseUrl: redactUrl(rest.baseUrl) };
     }),
   };
 }
