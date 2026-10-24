@@ -69,7 +69,7 @@ MODELHARBOR_CONFIG=./modelharbor.config.local.json npm run dev:server
 Relative paths in `MODELHARBOR_CONFIG` / `MODELHARBOR_USAGE_LOG` resolve
 against the directory you ran `npm` from.
 
-Two adapter kinds ship today:
+Three adapter kinds ship today (two live, one for CI and demos):
 
 | `kind` | Talks to | Notes |
 |---|---|---|
