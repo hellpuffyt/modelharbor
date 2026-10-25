@@ -5,14 +5,34 @@ health/latency/context-limit per model, automatic task-aware routing with
 failover, and a real usage-cost dashboard. Not a config file. An operable
 instrument panel.
 
-![ModelHarbor dashboard, light theme](docs/screenshots/dashboard-light.png)
+[Case study ↗](https://hellpuff.dev/work/modelharbor)
+
+<img src="docs/assets/dashboard.webp" width="100%" alt="ModelHarbor dashboard with provider health cards, routing panel and cost totals">
+
+*Real screenshot (mock provider mode, no API keys): health for 8 mock models
+across 3 providers (one degraded, one down), task-aware routing, and the usage
+and cost panel after 9 routed requests.*
 
 <details>
-<summary>Dark theme</summary>
+<summary>More screenshots</summary>
+
+<img src="docs/assets/task-routing.webp" width="100%" alt="ModelHarbor routing panel with code task selected and the executed response">
+
+*Real screenshot: the routing panel choosing `aurora-coder-large` for a `code`
+task and showing the mock response it executed.*
+
+![ModelHarbor dashboard, light theme](docs/screenshots/dashboard-light.png)
 
 ![ModelHarbor dashboard, dark theme](docs/screenshots/dashboard-dark.png)
 
 </details>
+
+## Status
+
+v1.0.0, self-hosted, single process. The mock provider path, routing,
+failover and cost aggregation are covered by the test suite and run in CI on
+Linux, macOS and Windows (Node 20). The live `openai-compatible` and `ollama`
+adapters are tested against stubbed `fetch` only — see [Limitations](#limitations).
 
 ## Why
 
@@ -23,8 +43,8 @@ month is a surprise. ModelHarbor is a small, self-hosted service that answers
 all three with one running process and one dashboard:
 
 - **Health** — every configured model is checked on a TTL, classified
-  `healthy` / `degraded` / `down` by response latency, with the error message
-  surfaced when a check fails.
+  `healthy` / `degraded` (a successful check slower than 4 s) / `down` (the
+  check failed), with the error message surfaced when a check fails.
 - **Routing** — each task type (`code`, `chat`, `fast`, `long-context`) has a
   ranked pool of candidate models. The router walks the pool in priority
   order, skipping anything unhealthy, and the *execution* path goes further:
@@ -33,6 +53,12 @@ all three with one running process and one dashboard:
 - **Cost** — every executed request — success or failure — becomes a
   `UsageEvent` with real token counts and computed cost, aggregated by model,
   provider, task, and day.
+
+## Prerequisites
+
+- Node.js 20 or newer and npm (CI runs Node 20; also checked locally on Node 24).
+- No API keys for the mock quickstart. Live mode needs a reachable
+  OpenAI-compatible endpoint or Ollama server.
 
 ## Quickstart (mock mode — no API keys)
 
@@ -55,6 +81,22 @@ deliberately `degraded` (elevated latency), one deliberately `down` — and a
 routing panel you can drive: pick a task, hit **Run**, and watch the executed
 request (with real failover if the top pick is unhealthy) land in the cost
 dashboard.
+
+The API is also usable directly; the dev server proxies `/api` to
+`127.0.0.1:4180`:
+
+```console
+$ curl -s -X POST -H 'content-type: application/json' \
+    -d '{"task":"chat","prompt":"hi"}' http://localhost:5180/api/route
+{"task":"chat","attempted":[{"candidate":{"providerId":"boreal","modelId":"boreal-fast-mini"},"outcome":"selected"}],"chosen":{"providerId":"boreal","modelId":"boreal-fast-mini"},"reason":"selected boreal/boreal-fast-mini","text":"[mock:boreal-fast-mini] response #1 to: hi","events":[{…,"promptTokens":1,"completionTokens":69,"costUsd":0.000028,…,"success":true,"failoverCount":0}]}
+```
+
+To run the built output instead of the watchers (after `npm run build`):
+
+```bash
+npm start -w server                      # node server/dist/index.js on 127.0.0.1:4180
+npm run preview -w web -- --port 5180    # serves web/dist; /api is proxied to :4180
+```
 
 ## Going live
 
@@ -104,6 +146,8 @@ is the tracked mock config; put live keys only in a `*.local.json` file
 | `HOST` | `127.0.0.1` | Bind address |
 | `PORT` | `4180` | Port |
 | `MODELHARBOR_CORS_ORIGIN` | unset (no CORS) | One exact origin allowed to call the API cross-origin, e.g. a dashboard built with `VITE_API_BASE_URL` |
+
+See [SECURITY.md](SECURITY.md) for how to report a vulnerability.
 
 ## Architecture
 
@@ -185,6 +229,23 @@ modelharbor.config.json          default (mock) config — used by CI and `npm r
 modelharbor.config.example.json  documented live-mode config to copy and edit
 ```
 
+## Limitations
+
+- **Live adapters are not tested against real providers.** Only stubbed-`fetch`
+  tests cover `openai-compatible` and `ollama`; running them against real
+  endpoints needs your own keys or Ollama server.
+- **No authentication** — see the security model above. Loopback-only by default.
+- **Usage is in memory unless `MODELHARBOR_USAGE_LOG` is set**; restarting the
+  server without it discards the cost history.
+- **Narrow screens:** the dashboard fits a phone-width viewport (checked at
+  320 px and 390 px with no horizontal page scroll); the recent-events table
+  scrolls sideways inside its own panel.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Changes are listed in
+[CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
-MIT © 2026 Prabesh Sharma
+MIT © 2026 Prabesh Sharma — see [LICENSE](LICENSE).
