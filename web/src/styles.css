@@ -483,7 +483,7 @@ pre,
 
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -507,6 +507,7 @@ pre,
   font-size: 19px;
   font-weight: 650;
   font-family: var(--mono);
+  overflow-wrap: anywhere;
 }
 
 .bar-list {
