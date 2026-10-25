@@ -147,7 +147,14 @@ pre,
 
 @media (max-width: 900px) {
   .grid {
-    grid-template-columns: 1fr;
+    /* minmax(0, …) lets the single column shrink below its content's min-content width */
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .app {
+    padding: 16px 16px 48px;
   }
 }
 
@@ -234,7 +241,7 @@ pre,
 
 .health-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
   gap: 10px;
 }
 
