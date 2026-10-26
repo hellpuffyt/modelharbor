@@ -147,7 +147,14 @@ pre,
 
 @media (max-width: 900px) {
   .grid {
-    grid-template-columns: 1fr;
+    /* minmax(0, …) lets the single column shrink below its content's min-content width */
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .app {
+    padding: 16px 16px 48px;
   }
 }
 
@@ -234,7 +241,7 @@ pre,
 
 .health-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
   gap: 10px;
 }
 
@@ -476,7 +483,7 @@ pre,
 
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -500,6 +507,7 @@ pre,
   font-size: 19px;
   font-weight: 650;
   font-family: var(--mono);
+  overflow-wrap: anywhere;
 }
 
 .bar-list {
